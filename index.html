@@ -155,6 +155,7 @@
     color:#666;pointer-events:none;
   }
   #confetti-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999}
+  #fireworks-canvas{position:absolute;pointer-events:none;z-index:1;display:none}
 </style>
 </head>
 <body>
@@ -1924,6 +1925,7 @@
 
 
       <div id="bridge-seam-patch" style="position:absolute;left:9082px;top:1755px;width:2953px;height:9px;background:linear-gradient(to bottom, #B0AEA8 0%, #BAB5B1 100%);pointer-events:none;"></div>
+      <canvas id="fireworks-canvas" aria-hidden="true"></canvas>
       <div id="sprites-layer"></div>
     </div>
     <div id="fade"></div>
@@ -2805,6 +2807,7 @@ async function finaleSequence(){
   ringItem.el.style.opacity = '0';
   tryPickup(ringItem, 'yash');
   try { if (window.fireRingConfetti) window.fireRingConfetti(); } catch (e) {} // confetti burst on collecting the ring
+  setTimeout(() => { try { if (window.fireRingFireworks) window.fireRingFireworks(); } catch (e) {} }, 500); // fireworks 0.5s after the confetti
   await holdIdle(yash, 200);
 
   // Yash stops here (S6/Y6) -- that is the trigger. No more walking: only Soya turns to face him (Yash already faces her).
@@ -3317,6 +3320,78 @@ function loop(ts){
 /* fire once per visit to the Save-the-Date screen; called from finaleSequence() the moment Yash collects the ring */
 var fired = false;
 window.fireRingConfetti = function(){ if (fired) return; fired = true; popConfetti(); };
+})();
+</script>
+<script>
+/* Ring fireworks (reference: fireworks-sample.html -- the code below is copied from it unchanged, except the canvas id).
+   Self-contained, no libraries; own click-through canvas; DPR capped at 2; loop stops when no rockets/sparks are left. */
+(function(){
+const cv=document.getElementById('fireworks-canvas'),ctx=cv.getContext('2d');
+let W,H,DPR;
+function fit(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+fit();addEventListener('resize',fit);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const HUES=[0,45,120,200,300,30];
+let rockets=[],sparks=[],running=false;
+
+function launch(x){
+  const tx=x??rnd(W*.15,W*.85), ty=rnd(H*.12,H*.42);
+  rockets.push({x:tx+rnd(-30,30),y:H*.86,tx,ty,hue:HUES[Math.random()*HUES.length|0],vy:-rnd(9,11)});
+  if(!running){running=true;requestAnimationFrame(loop)}
+}
+function explode(x,y,hue){
+  const kind=Math.random(), n=kind<.5?90:70;
+  for(let i=0;i<n;i++){
+    const a=i/n*6.283+rnd(-.03,.03);
+    const sp=kind<.5?rnd(3.2,3.6):rnd(1,5.2);               // ring vs. full burst
+    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+      h:hue+rnd(-12,12),l:rnd(58,78),life:rnd(55,85),t:0,tw:Math.random()<.25});
+  }
+  for(let i=0;i<16;i++)                                      // white glitter core
+    sparks.push({x,y,vx:rnd(-1.5,1.5),vy:rnd(-1.5,1.5),h:0,l:100,s:0,life:rnd(25,40),t:0});
+}
+function show(){
+  [0,350,800,1250,1700,2300].forEach(d=>setTimeout(()=>launch(),d));
+}
+function loop(){
+  ctx.globalCompositeOperation='destination-out';             // fade old frame → streaky trails
+  ctx.fillStyle='rgba(0,0,0,.22)';ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation='lighter';                     // glowing additive blend
+
+  for(const r of rockets){
+    r.vy*=.985;r.y+=r.vy;
+    ctx.fillStyle=`hsl(${r.hue},100%,80%)`;ctx.fillRect(r.x-1.5,r.y,3,10);
+    if(r.vy>-1.4||r.y<=r.ty){r.dead=true;explode(r.x,r.y,r.hue)}
+  }
+  rockets=rockets.filter(r=>!r.dead);
+
+  for(const s of sparks){
+    s.t++;s.vx*=.975;s.vy=s.vy*.975+.045;s.x+=s.vx;s.y+=s.vy;
+    const k=1-s.t/s.life; if(k<=0)continue;
+    if(s.tw&&s.t%6<2)continue;                                 // twinkle
+    ctx.fillStyle=`hsla(${s.h},100%,${s.l}%,${k})`;
+    const z=k>.5?3:2;ctx.fillRect(s.x,s.y,z,z);
+  }
+  sparks=sparks.filter(s=>s.t<s.life);
+  if(rockets.length||sparks.length)requestAnimationFrame(loop);
+  else{running=false;ctx.clearRect(0,0,W,H)}
+}
+
+/* The canvas lives inside the scrolling #camera (so it can sit between the world art and the characters), so it is
+   sized/positioned in the game's 1080x1920 design space to cover exactly what is visible on screen (same crop-to-fill
+   scale as the game's fitScale()). The camera is standing still on the Save-the-Date screen, so it is placed at fire time. */
+function place(){
+  const sc=Math.max(innerWidth/1080,innerHeight/1920);
+  const cx=Math.max(0,(1080-innerWidth/sc)/2), cy=Math.max(0,(1920-innerHeight/sc)/2);
+  let cam=0; try{cam=camX}catch(e){}
+  cv.style.left=(cam+cx)+'px'; cv.style.top=cy+'px';
+  cv.style.width=(innerWidth/sc)+'px'; cv.style.height=(innerHeight/sc)+'px';
+}
+addEventListener('resize',place);
+
+/* fire once per visit to the Save-the-Date screen; called 0.5s after the confetti (see finaleSequence) */
+var fired = false;
+window.fireRingFireworks = function(){ if (fired) return; fired = true; place(); cv.style.display='block'; show(); };
 })();
 </script>
 </body>
