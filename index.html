@@ -2764,6 +2764,11 @@ async function finaleSequence(){
   await hopP;
   yash.anim = 'idle';
   await ringP;
+  // The ring is a path inside the world SVG, where the temple art is painted AFTER it -- so once it falls toward the temple
+  // it showed up behind it. Re-append it as the last child of its own group (same coordinate system) so it is painted in front
+  // of the temple (still behind the characters). Done only now, after it has fully risen out of the block: while it emerges it
+  // must stay behind the block.
+  try { const rp = ringItem.el.parentNode; if (rp) rp.appendChild(ringItem.el); } catch (e) {}
 
   const scoreBarEl = document.getElementById('score-bar');
   if (scoreBarEl) scoreBarEl.style.display = 'none';
