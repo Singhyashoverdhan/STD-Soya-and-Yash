@@ -154,6 +154,7 @@
     position:fixed;left:0;right:0;bottom:6px;text-align:center;font-size:11px;
     color:#666;pointer-events:none;
   }
+  #confetti-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999}
 </style>
 </head>
 <body>
@@ -2803,6 +2804,7 @@ async function finaleSequence(){
   ringItem.el.style.transform = `translate(${totalDxTarget}px, ${totalDyTarget-40}px) scale(0.4)`;
   ringItem.el.style.opacity = '0';
   tryPickup(ringItem, 'yash');
+  try { if (window.fireRingConfetti) window.fireRingConfetti(); } catch (e) {} // confetti burst on collecting the ring
   await holdIdle(yash, 200);
 
   // Yash stops here (S6/Y6) -- that is the trigger. No more walking: only Soya turns to face him (Yash already faces her).
@@ -3250,6 +3252,72 @@ document.getElementById('title').addEventListener('click', () => {
   playSequence();
 });
 
+</script>
+<canvas id="confetti-canvas" aria-hidden="true"></canvas>
+<script>
+/* Ring confetti (reference: confetti-v3.html -- code below is copied from it unchanged, except the canvas id).
+   Self-contained, no libraries; own overlay canvas; DPR capped at 2; loop stops when no pieces are left. */
+(function(){
+const cv=document.getElementById('confetti-canvas'),ctx=cv.getContext('2d');
+let W,H,DPR;
+function fit(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+fit();addEventListener('resize',fit);
+
+const COLORS=['#e52521','#fbd000','#43b047','#049cd8','#ffffff','#ff7ab8'];
+const rnd=(a,b)=>a+Math.random()*(b-a);
+let parts=[],running=false,last=0;
+
+function piece(x,y,angle,speed){
+  const a=angle*Math.PI/180, r=Math.random();
+  return {
+    x,y,vx:Math.cos(a)*speed,vy:-Math.sin(a)*speed,
+    shape:r<.65?'rect':r<.85?'dot':'strip',
+    w:rnd(9,16),h:rnd(6,10),
+    color:COLORS[Math.random()*COLORS.length|0],
+    rot:rnd(0,6.28),vr:rnd(-.25,.25),
+    flip:rnd(0,6.28),vf:rnd(.12,.3),          // 3D tumble
+    wob:rnd(0,6.28),vw:rnd(.04,.1),           // side-to-side sway
+    t:0,life:rnd(170,240)
+  };
+}
+function shoot(x,y,n,baseAngle,spread,speed){
+  for(let i=0;i<n;i++)parts.push(piece(x,y,baseAngle+rnd(-spread,spread),rnd(speed*.45,speed)));
+}
+function popConfetti(){
+  shoot(0,H*.82,60,58,18,27);               // left cannon
+  shoot(W,H*.82,60,122,18,27);              // right cannon
+  setTimeout(()=>{shoot(0,H*.82,40,62,16,23);shoot(W,H*.82,40,118,16,23)},260);
+  setTimeout(()=>{shoot(W/2,H*.5,50,90,70,17)},520);   // centre pop
+  if(!running){running=true;last=performance.now();requestAnimationFrame(loop)}
+}
+function loop(ts){
+  const dt=Math.min(2.5,(ts-last)/16.7||1);last=ts;
+  ctx.clearRect(0,0,W,H);
+  for(const p of parts){
+    p.t+=dt;
+    p.vx*=Math.pow(.965,dt); p.vy=p.vy*Math.pow(.965,dt)+.34*dt;   // air drag + gravity
+    if(p.vy>3.2)p.vy=3.2;                                           // terminal velocity: floaty fall
+    p.wob+=p.vw*dt; p.x+=(p.vx+Math.sin(p.wob)*1.2)*dt; p.y+=p.vy*dt;
+    p.rot+=p.vr*dt; p.flip+=p.vf*dt;
+    const sy=Math.cos(p.flip);                                      // flips thin → full → thin
+    const alpha=Math.min(1,(p.life-p.t)/40);
+    if(alpha<=0)continue;
+    ctx.save();ctx.globalAlpha=alpha;ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+    ctx.fillStyle=p.color;
+    if(p.shape==='rect'){ctx.scale(1,sy);ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.fillStyle='rgba(0,0,0,'+(sy<0?.22:0)+')';ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h)}   // darker back side
+    else if(p.shape==='strip'){ctx.scale(1,sy);ctx.fillRect(-p.w,-1.5,p.w*2,3)}
+    else{ctx.beginPath();ctx.ellipse(0,0,4,4*Math.abs(sy)+.5,0,0,6.283);ctx.fill()}
+    ctx.restore();
+  }
+  parts=parts.filter(p=>p.t<p.life&&p.y<H+20);
+  if(parts.length)requestAnimationFrame(loop);else running=false;
+}
+
+/* fire once per visit to the Save-the-Date screen; called from finaleSequence() the moment Yash collects the ring */
+var fired = false;
+window.fireRingConfetti = function(){ if (fired) return; fired = true; popConfetti(); };
+})();
 </script>
 </body>
 </html>
