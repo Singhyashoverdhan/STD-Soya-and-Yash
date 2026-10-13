@@ -282,6 +282,15 @@
         if (typeof CHAR_SPRITES !== 'undefined' && CHAR_SPRITES[k]) add('data:image/png;base64,' + CHAR_SPRITES[k].b64);
       });
     } catch (e) {}
+    // Kolkata outfit sprites (swapped in at the pipe-3 descent, well into the story): decoded up front with the opening art so they never pop in late
+    try {
+      ['yash', 'soya'].forEach(function(w){
+        ['walk', 'walk_alt', 'walk_stride', 'jump'].forEach(function(p){
+          var e = (typeof CHAR_SPRITES_OUTFITS !== 'undefined') && CHAR_SPRITES_OUTFITS[w + '_' + p + '_Kolkata'];
+          if (e) add('data:image/png;base64,' + e.b64);
+        });
+      });
+    } catch (e) {}
     // the gate art that gets swapped to "open" about a second into the opening beat
     try { if (typeof GATE_OPEN_B64 !== 'undefined') add('data:image/png;base64,' + GATE_OPEN_B64); } catch (e) {}
     // world SVG art visible in the opening screen (pattern-filled shapes at the left edge of the world, inside the 1920-tall frame)
