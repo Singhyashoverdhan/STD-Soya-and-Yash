@@ -3305,13 +3305,13 @@ async function playSequence(){
     await walkTo(soya, EXT.pipe3_x - 230, GROUND_Y, pipe3Pace);
   })();
   await walkTo(yash, EXT.pipe3_x - 190, GROUND_Y, pipe3Pace); // re-checked against the rendered art: a real, visible one-step gap (see pipe1 note above)
-  // emerging here lands them at Victoria Memorial, back to the default/travel outfit --
+  // emerging here lands them at Victoria Memorial, in the Kolkata outfit (kept to the end of the story) --
   // Mumbai was active for the whole Marine Drive/cinema/cat-food stretch, ending right after
   // this descend (the pipe gone down after the cats)
   // Kolkata-arrival fix (2026-10-10 audit): the dog's sprite is switched on while both characters are
   // still inside the pipe (its spot is far off-screen), so its first-draw hitch is not on a visible frame.
   let dogJoinP;
-  await pipeTransition(EXT.pipe3_x, EXT.pipe3_cap_y, EXT.pipe3_emerge_x, EXT.pipe3_opening_y, () => { setOutfit('default'); dogJoinP = startDogJoin(EXT.dog_join_x); }, soyaPipe3Approach, 'Kolkata', 110);
+  await pipeTransition(EXT.pipe3_x, EXT.pipe3_cap_y, EXT.pipe3_emerge_x, EXT.pipe3_opening_y, () => { setOutfit('Kolkata'); dogJoinP = startDogJoin(EXT.dog_join_x); }, soyaPipe3Approach, 'Kolkata', 110);
   // Soya is ahead of Yash coming out of this pipe, per the beat -- and she STAYS visibly
   // ahead (not directly in front of him) all the way past Victoria Memorial, so both
   // characters stay clearly visible instead of overlapping into one silhouette.
