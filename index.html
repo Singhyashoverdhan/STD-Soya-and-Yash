@@ -2680,6 +2680,9 @@ function renderCompanion(state, now){
   let b64, poseKey;
   if (state.held) { b64 = state.held; poseKey = 'held'; }
   else {
+    if (state.stepPhase !== undefined && !state.stepSeeded) { // cats only: delay this cat's first pose change by its own phase so the three never step in lockstep
+      state.stepSeeded = true; state.lastToggle = now - companionGaitMs(state.gaitSpeed) - 1 + state.stepPhase;
+    }
     if (now - state.lastToggle > companionGaitMs(state.gaitSpeed)) { state.frame = 1 - state.frame; state.lastToggle = now; }
     poseKey = state.frame === 0 ? 'poseA' : 'poseB';
     b64 = state.frame === 0 ? state.poseA : state.poseB;
@@ -2710,7 +2713,18 @@ function renderCompanion(state, now){
   // the correction has to mirror too (1 - anchorFrac) rather than reuse the same fraction.
   const anchorFrac = (state.poseAnchor && state.poseAnchor[poseKey]) != null ? state.poseAnchor[poseKey] : 0.5;
   const centerFrac = state.facing < 0 ? (1 - anchorFrac) : anchorFrac;
-  state.el.style.left = (state.x - centerFrac * w) + 'px';
+  let left = state.x - centerFrac * w;
+  if (state.bodyCx && poseKey === 'poseB') {
+    // Cats, walk pose B: the whole-canvas centroid above still lets the nose and rump jump when the pose swaps (pose B is a different stride, and a
+    // left-facing sprite is mirrored about its LEFT edge, so a wider pose B swings outward). Put pose B's body centre (rump-to-chest midpoint)
+    // exactly where pose A's body centre is, using pose A's own placement as the reference.
+    const wA = state.target * ((state.poseScale && state.poseScale.poseA) || 1);
+    const aFrac = (state.poseAnchor && state.poseAnchor.poseA != null) ? state.poseAnchor.poseA : 0.5;
+    const sgn = state.facing < 0 ? -1 : 1;
+    const leftA = state.x - (state.facing < 0 ? (1 - aFrac) : aFrac) * wA;
+    left = leftA + sgn * (state.bodyCx.poseA * wA - state.bodyCx.poseB * w);
+  }
+  state.el.style.left = left + 'px';
   state.el.style.top = (state.y - h) + 'px';
   state.el.style.transform = state.facing < 0 ? 'scaleX(-1)' : 'none';
 }
@@ -2719,15 +2733,17 @@ dog.poseA = COMP.dog_a; dog.poseB = COMP.dog_b;
 // walk poseB and the eating pose crop tighter around the cat (more of the canvas is tail/stride
 // spread, less is cat), so they need a larger target width than poseA to read as the same size --
 // see renderCompanion's poseMult. Same correction for all 3 cats since they share one art rig.
-const CAT_POSE_SCALE = { poseA: 1.0, poseB: 1.317, held: 1.228 };
+const CAT_POSE_SCALE = { poseA: 1.0, poseB: 1.12, held: 1.228 }; // poseB was 1.317: that drew the walk-B cat ~35% bigger in the head than pose A (measured on the art)
+const CAT_BODY_CX = { poseA: 0.457, poseB: 0.4935 };   // body centre (rump-to-chest midpoint) as a fraction of each pose's canvas width, measured on the art (same rig, all 3 cats)
+const CAT_STEP_PHASE_MS = { brown: 0, orange: 107, black: 213 }; // first-pose-change delay per cat (a third of the 320 ms A+B cycle apart)
 // alpha-weighted horizontal content centroid of each pose, as a fraction of native image width
 // (0.5 = dead center). Measured by decoding the actual PNGs and summing alpha-weighted x --
 // see renderCompanion's anchorFrac.
 const CAT_POSE_ANCHOR = { poseA: 0.484, poseB: 0.509, held: 0.517 };
 const cats = {
-  brown: Object.assign(makeCompanionState(115, 'w'), { poseA: COMP.cat_brown_a, poseB: COMP.cat_brown_b, eat: COMP.cat_brown_eat, poseScale: CAT_POSE_SCALE, poseAnchor: CAT_POSE_ANCHOR }),
-  orange: Object.assign(makeCompanionState(115, 'w'), { poseA: COMP.cat_orange_a, poseB: COMP.cat_orange_b, eat: COMP.cat_orange_eat, poseScale: CAT_POSE_SCALE, poseAnchor: CAT_POSE_ANCHOR }),
-  black: Object.assign(makeCompanionState(115, 'w'), { poseA: COMP.cat_black_a, poseB: COMP.cat_black_b, eat: COMP.cat_black_eat, poseScale: CAT_POSE_SCALE, poseAnchor: CAT_POSE_ANCHOR }),
+  brown: Object.assign(makeCompanionState(115, 'w'), { poseA: COMP.cat_brown_a, poseB: COMP.cat_brown_b, eat: COMP.cat_brown_eat, poseScale: CAT_POSE_SCALE, poseAnchor: CAT_POSE_ANCHOR, bodyCx: CAT_BODY_CX, stepPhase: CAT_STEP_PHASE_MS.brown }),
+  orange: Object.assign(makeCompanionState(115, 'w'), { poseA: COMP.cat_orange_a, poseB: COMP.cat_orange_b, eat: COMP.cat_orange_eat, poseScale: CAT_POSE_SCALE, poseAnchor: CAT_POSE_ANCHOR, bodyCx: CAT_BODY_CX, stepPhase: CAT_STEP_PHASE_MS.orange }),
+  black: Object.assign(makeCompanionState(115, 'w'), { poseA: COMP.cat_black_a, poseB: COMP.cat_black_b, eat: COMP.cat_black_eat, poseScale: CAT_POSE_SCALE, poseAnchor: CAT_POSE_ANCHOR, bodyCx: CAT_BODY_CX, stepPhase: CAT_STEP_PHASE_MS.black }),
 };
 const companions = [dog, cats.brown, cats.orange, cats.black];
 function frameLoop2(){
