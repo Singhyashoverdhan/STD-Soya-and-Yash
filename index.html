@@ -73,7 +73,9 @@
     image-rendering:pixelated;pointer-events:none;
   }
   #title-sub{
-    position:absolute;left:0;right:0;top:106px;z-index:1;
+    /* sits SUB_GAP below the CLICK TO BEGIN button: #title is 1920 tall, the button box is 44 tall, centred then shifted up 279px,
+       so its bottom edge is at 50% - 279px + 22px; add the 56px gap. Change the last term to move the line. */
+    position:absolute;left:0;right:0;top:calc(50% - 279px + 22px + 56px);z-index:1;
     text-align:center;white-space:nowrap;pointer-events:none;
     font-family:'Press Start 2P',monospace;font-size:22px;letter-spacing:1px;line-height:1.5;
     color:#fff;text-shadow:2px 2px 0 #000;
