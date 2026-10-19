@@ -108,6 +108,8 @@
     color:#ffe066;font-family:'Press Start 2P',monospace;font-size:21px;letter-spacing:1px;
     cursor:pointer;display:none;
   }
+  /* Next arrow drawn with CSS (the text glyph U+25B6 becomes a coloured emoji tile on iPhones) */
+  .next-tri{display:inline-block;width:0;height:0;margin-left:.45em;border-style:solid;border-width:.36em 0 .36em .6em;border-color:transparent transparent transparent currentColor;vertical-align:.06em;}
   #savedate{
     position:absolute;inset:0;z-index:90;display:none;
     align-items:center;justify-content:center;
@@ -2122,7 +2124,7 @@
       <div class="card" id="epilogue-card-inner">
       </div>
     </div>
-    <div id="replay">Next &#9654;</div>
+    <div id="replay">Next <span class="next-tri" aria-hidden="true"></span></div>
     
   </div>
 </div>
@@ -3102,18 +3104,18 @@ const EPILOGUE_CARDS = [
     '<p class="epi-row"><span>Check-in:</span><span>1500 Hrs</span></p>' +
     '<p class="epi-row"><span>Welcome Dinner:</span><span>1900 Hrs</span></p>' +
     '<p class="epi-row"><span>Afterparty:</span><span>2330 Hrs</span></p>',
-    btn: '<div class="next-btn epi-ctl" id="epi-next-1">Next &#9654;</div>' },
+    btn: '<div class="next-btn epi-ctl" id="epi-next-1">Next <span class="next-tri" aria-hidden="true"></span></div>' },
   { walkX: EXT.kerala_day_x, pair: '11feb', bg: 'day', html:
     '<h1>11th February 2027</h1>' +
     '<p class="epi-row"><span>Haldi:</span><span>1100 Hrs</span></p>' +
     '<p class="epi-row epi-ph" aria-hidden="true"><span>&nbsp;</span></p><p class="epi-row epi-ph" aria-hidden="true"><span>&nbsp;</span></p>', // two invisible rows keep the title where it is on the 3-row screens
-    btn: '<div class="next-btn epi-ctl" id="epi-next-2">Next &#9654;</div>' },
+    btn: '<div class="next-btn epi-ctl" id="epi-next-2">Next <span class="next-tri" aria-hidden="true"></span></div>' },
   { walkX: EXT.kerala_day_x, pair: 'wedding', bg: 'mandap', confetti: true, html:
     '<h1>11th February 2027</h1>' +
     '<p class="epi-row"><span>Baraat:</span><span>1600 Hrs</span></p>' +
     '<p class="epi-row"><span>Shaadi:</span><span>1830 Hrs</span></p>' +
     '<p class="epi-row epi-ph" aria-hidden="true"><span>&nbsp;</span></p>',
-    btn: '<div class="next-btn epi-ctl" id="epi-next-3">Next &#9654;</div>' },
+    btn: '<div class="next-btn epi-ctl" id="epi-next-3">Next <span class="next-tri" aria-hidden="true"></span></div>' },
   { walkX: EXT.mandap_x, html:
     '<h1>RSVP</h1><p>We can&#39;t wait to celebrate with you!</p><a class="rsvp-btn" id="epi-rsvp" href="https://forms.gle/NhDoUC6cCabcQPc98" target="_blank" rel="noopener">Click here to RSVP</a>',
     btn: null }, // the RSVP button now sits inside the centred text block (same link, same attributes)
@@ -3553,6 +3555,7 @@ document.getElementById('title').addEventListener('click', () => {
 (function(){
 const cv = document.getElementById('baraat-confetti'); if (!cv) return;
 const ctx = cv.getContext('2d');
+const BARAAT_CONFETTI_ON = false; // OFF for now (iPhone reload investigation). true = confetti on the Baraat/Shaadi screen again.
 const W = 1080, H = 1920, N = 70;
 const COLORS = ['#F5A31A','#F5A31A','#E8861C','#B3201F','#B3201F','#F2C230','#F2C230','#FFF6DC','#FFF6DC','#3F8F45'];
 const SIZES = [6,8,8,10,12];
@@ -3581,6 +3584,7 @@ function frame(ts){
   raf = requestAnimationFrame(frame);
 }
 function start(){
+  if (!BARAAT_CONFETTI_ON) return;
   if (on) return;
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   on = true; parts = []; for (let i = 0; i < N; i++) parts.push(spawn({}, true));
