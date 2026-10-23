@@ -3031,7 +3031,7 @@ async function finaleSequence(){
   tryPickup(ringItem, 'yash');
   yash.proposal = true; // one-knee proposal pose from the moment he collects the ring
   try { if (window.fireRingConfetti) window.fireRingConfetti(); } catch (e) {} // confetti burst on collecting the ring
-  setTimeout(() => { try { if (window.fireRingFireworks) window.fireRingFireworks(); } catch (e) {} }, 500); // fireworks 0.5s after the confetti
+  setTimeout(() => { try { if (window.fireRingFireworks) window.fireRingFireworks(); } catch (e) {} }, 1800); // fireworks 1.8s after the confetti (was 0.5s): the confetti has mostly fallen by then, so the two never peak together (phone memory)
   await holdIdle(yash, 200);
 
   // Yash stops here (S6/Y6) -- that is the trigger. No more walking: only Soya turns to face him (Yash already faces her).
@@ -3599,11 +3599,11 @@ window.baraatConfetti = { start: start, stop: stop, isRunning: () => on };
 </script>
 <script>
 /* Ring confetti (reference: confetti-v3.html -- code below is copied from it unchanged, except the canvas id).
-   Self-contained, no libraries; own overlay canvas; DPR capped at 2; loop stops when no pieces are left. */
+   Self-contained, no libraries; own overlay canvas; DPR fixed at 1 (light on phone memory); loop stops when no pieces are left. */
 (function(){
 const cv=document.getElementById('confetti-canvas'),ctx=cv.getContext('2d');
 let W,H,DPR;
-function fit(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+function fit(){DPR=1;W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
 fit();addEventListener('resize',fit);
 
 const COLORS=['#e52521','#fbd000','#43b047','#049cd8','#ffffff','#ff7ab8'];
@@ -3620,17 +3620,17 @@ function piece(x,y,angle,speed){
     rot:rnd(0,6.28),vr:rnd(-.25,.25),
     flip:rnd(0,6.28),vf:rnd(.12,.3),          // 3D tumble
     wob:rnd(0,6.28),vw:rnd(.04,.1),           // side-to-side sway
-    t:0,life:rnd(170,240)
+    t:0,life:rnd(110,160)
   };
 }
 function shoot(x,y,n,baseAngle,spread,speed){
   for(let i=0;i<n;i++)parts.push(piece(x,y,baseAngle+rnd(-spread,spread),rnd(speed*.45,speed)));
 }
 function popConfetti(){
-  shoot(0,H*.82,60,58,18,27);               // left cannon
-  shoot(W,H*.82,60,122,18,27);              // right cannon
-  setTimeout(()=>{shoot(0,H*.82,40,62,16,23);shoot(W,H*.82,40,118,16,23)},260);
-  setTimeout(()=>{shoot(W/2,H*.5,50,90,70,17)},520);   // centre pop
+  shoot(0,H*.82,24,58,18,27);               // left cannon
+  shoot(W,H*.82,24,122,18,27);              // right cannon
+  setTimeout(()=>{shoot(0,H*.82,16,62,16,23);shoot(W,H*.82,16,118,16,23)},260);
+  setTimeout(()=>{shoot(W/2,H*.5,20,90,70,17)},520);   // centre pop
   if(!running){running=true;last=performance.now();requestAnimationFrame(loop)}
 }
 function loop(ts){
@@ -3664,11 +3664,11 @@ window.fireRingConfetti = function(){ if (fired) return; fired = true; popConfet
 </script>
 <script>
 /* Ring fireworks (reference: fireworks-sample.html -- the code below is copied from it unchanged, except the canvas id).
-   Self-contained, no libraries; own click-through canvas; DPR capped at 2; loop stops when no rockets/sparks are left. */
+   Self-contained, no libraries; own click-through canvas; DPR fixed at 1 (light on phone memory); loop stops when no rockets/sparks are left. */
 (function(){
 const cv=document.getElementById('fireworks-canvas'),ctx=cv.getContext('2d');
 let W,H,DPR;
-function fit(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
+function fit(){DPR=1;W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
 fit();addEventListener('resize',fit);
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const HUES=[0,45,120,200,300,30];
@@ -3685,13 +3685,13 @@ function explode(x,y,hue){
     const a=i/n*6.283+rnd(-.03,.03);
     const sp=kind<.5?rnd(3.2,3.6):rnd(1,5.2);               // ring vs. full burst
     sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
-      h:hue+rnd(-12,12),l:rnd(58,78),life:rnd(55,85),t:0,tw:Math.random()<.25});
+      h:hue+rnd(-12,12),l:rnd(58,78),life:rnd(42,62),t:0,tw:Math.random()<.25});
   }
   for(let i=0;i<16;i++)                                      // white glitter core
-    sparks.push({x,y,vx:rnd(-1.5,1.5),vy:rnd(-1.5,1.5),h:0,l:100,s:0,life:rnd(25,40),t:0});
+    sparks.push({x,y,vx:rnd(-1.5,1.5),vy:rnd(-1.5,1.5),h:0,l:100,s:0,life:rnd(18,28),t:0});
 }
 function show(){
-  [0,350,800,1250,1700,2300].forEach(d=>setTimeout(()=>launch(),d));
+  [0,600,1200].forEach(d=>setTimeout(()=>launch(),d));
 }
 function loop(){
   ctx.globalCompositeOperation='destination-out';             // fade old frame → streaky trails
