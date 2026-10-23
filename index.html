@@ -3598,6 +3598,19 @@ window.baraatConfetti = { start: start, stop: stop, isRunning: () => on };
 })();
 </script>
 <script>
+/* Older iPhones (iOS 16/17 and earlier) run out of memory at the ring confetti + fireworks and the page restarts.
+   RING_FX_OFF is true only for an iPhone/iPod/iPad whose user-agent says iOS older than 18. If the version cannot be read,
+   the effects stay ON. The story itself does not depend on the effects; it carries on without them. */
+window.RING_FX_OFF = (function(){
+  try {
+    var ua = navigator.userAgent || '';
+    if (!/\b(iPhone|iPod|iPad)\b/.test(ua)) return false;
+    var m = ua.match(/OS (\d+)[_.]/);
+    return !!(m && parseInt(m[1], 10) < 18);
+  } catch (e) { return false; }
+})();
+</script>
+<script>
 /* Ring confetti (reference: confetti-v3.html -- code below is copied from it unchanged, except the canvas id).
    Self-contained, no libraries; own overlay canvas; DPR fixed at 1 (light on phone memory); loop stops when no pieces are left. */
 (function(){
@@ -3659,7 +3672,7 @@ function loop(ts){
 
 /* fire once per visit to the Save-the-Date screen; called from finaleSequence() the moment Yash collects the ring */
 var fired = false;
-window.fireRingConfetti = function(){ if (fired) return; fired = true; popConfetti(); };
+window.fireRingConfetti = function(){ if (fired || window.RING_FX_OFF) return; fired = true; popConfetti(); };
 })();
 </script>
 <script>
@@ -3731,7 +3744,7 @@ addEventListener('resize',place);
 
 /* fire once per visit to the Save-the-Date screen; called 0.5s after the confetti (see finaleSequence) */
 var fired = false;
-window.fireRingFireworks = function(){ if (fired) return; fired = true; place(); cv.style.display='block'; show(); };
+window.fireRingFireworks = function(){ if (fired || window.RING_FX_OFF) return; fired = true; place(); cv.style.display='block'; show(); };
 })();
 </script>
 <script>
